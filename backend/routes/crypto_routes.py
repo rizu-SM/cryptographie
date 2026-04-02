@@ -1,6 +1,8 @@
 from flask import Blueprint, request, jsonify
 from Algorithmes.caesar import caesar_encrypt, caesar_decrypt
 from Algorithmes.affine import affine_encrypt, affine_decrypt
+from Algorithmes.hill import hill_encrypt, hill_decrypt
+
 
 crypto_bp = Blueprint("crypto", __name__)
 
@@ -79,3 +81,44 @@ def decrypt_affine():
         return jsonify({"plaintext": result})
     except ValueError as e:
         return jsonify({"error": str(e)}), 400
+
+
+@crypto_bp.route("/hill/encrypt", methods=["POST"])
+def encrypt_hill():
+    data = request.get_json()
+
+    if not data or "text" not in data or "key_matrix" not in data:
+        return jsonify({"error": "Missing 'text' or 'key_matrix'"}), 400
+
+    text = data.get("text")
+    key_matrix = data.get("key_matrix")
+
+    if not text.replace(" ", "").isalpha():
+        return jsonify({"error": "Text must contain only letters"}), 400
+
+    try:
+        result = hill_encrypt(text, key_matrix)
+        return jsonify({"ciphertext": result})
+    except (TypeError, ValueError) as e:
+        return jsonify({"error": str(e)}), 400
+
+
+@crypto_bp.route("/hill/decrypt", methods=["POST"])
+def decrypt_hill():
+    data = request.get_json()
+
+    if not data or "text" not in data or "key_matrix" not in data:
+        return jsonify({"error": "Missing 'text' or 'key_matrix'"}), 400
+
+    text = data.get("text")
+    key_matrix = data.get("key_matrix")
+
+    if not text.replace(" ", "").isalpha():
+        return jsonify({"error": "Text must contain only letters"}), 400
+
+    try:
+        result = hill_decrypt(text, key_matrix)
+        return jsonify({"plaintext": result})
+    except (TypeError, ValueError) as e:
+        return jsonify({"error": str(e)}), 400
+
