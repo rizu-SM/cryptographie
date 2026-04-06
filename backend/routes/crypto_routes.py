@@ -3,6 +3,7 @@ from Algorithmes.caesar import caesar_encrypt, caesar_decrypt
 from Algorithmes.affine import affine_encrypt, affine_decrypt
 from Algorithmes.hill import hill_encrypt, hill_decrypt
 from Algorithmes.playfaire import playfair_encrypt, playfair_decrypt
+from Algorithmes.vigenere import vigenere_encrypt, vigenere_decrypt
 
 
 crypto_bp = Blueprint("crypto", __name__)
@@ -149,6 +150,7 @@ def encrypt_playfair():
 
 @crypto_bp.route("/playfair/decrypt", methods=["POST"])
 def decrypt_playfair():
+
     data = request.get_json()
 
     if not data or "text" not in data or "key" not in data:
@@ -166,6 +168,51 @@ def decrypt_playfair():
 
     try:
         result = playfair_decrypt(text, key)
+        return jsonify({"plaintext": result})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+    
+@crypto_bp.route("/vigenere/encrypt", methods=["POST"])
+def encrypt_vigenere():
+    data = request.get_json()
+
+    if not data or "text" not in data or "key" not in data:
+        return jsonify({"error": "Missing 'text' or 'key'"}), 400
+
+    text = data.get("text")
+    key = data.get("key")
+
+    if not isinstance(text, str) or not text.replace(" ", "").isalpha():
+        return jsonify({"error": "Text must contain only letters"}), 400
+
+    if not isinstance(key, str) or not key.isalpha():
+        return jsonify({"error": "Key must contain only letters"}), 400
+
+    try:
+        result = vigenere_encrypt(text, key)
+        return jsonify({"ciphertext": result})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+    
+
+@crypto_bp.route("/vigenere/decrypt", methods=["POST"])
+def decrypt_vigenere():
+    data = request.get_json()
+
+    if not data or "text" not in data or "key" not in data:
+        return jsonify({"error": "Missing 'text' or 'key'"}), 400
+
+    text = data.get("text")
+    key = data.get("key")
+
+    if not isinstance(text, str) or not text.replace(" ", "").isalpha():
+        return jsonify({"error": "Text must contain only letters"}), 400
+
+    if not isinstance(key, str) or not key.isalpha():
+        return jsonify({"error": "Key must contain only letters"}), 400
+
+    try:
+        result = vigenere_decrypt(text, key)
         return jsonify({"plaintext": result})
     except Exception as e:
         return jsonify({"error": str(e)}), 400
