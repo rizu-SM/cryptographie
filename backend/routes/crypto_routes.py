@@ -4,6 +4,7 @@ from Algorithmes.affine import affine_encrypt, affine_decrypt
 from Algorithmes.hill import hill_encrypt, hill_decrypt
 from Algorithmes.playfaire import playfair_encrypt, playfair_decrypt
 from Algorithmes.vigenere import vigenere_encrypt, vigenere_decrypt
+from Algorithmes.RC4 import rc4_decrypt, rc4_encrypt
 
 
 crypto_bp = Blueprint("crypto", __name__)
@@ -197,6 +198,7 @@ def encrypt_vigenere():
 
 @crypto_bp.route("/vigenere/decrypt", methods=["POST"])
 def decrypt_vigenere():
+
     data = request.get_json()
 
     if not data or "text" not in data or "key" not in data:
@@ -213,6 +215,44 @@ def decrypt_vigenere():
 
     try:
         result = vigenere_decrypt(text, key)
+        return jsonify({"plaintext": result})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+    
+@crypto_bp.route("/rc4/encrypt", methods=["POST"])
+def encrypt_rc4():
+    data = request.get_json()
+
+    if not data or "text" not in data or "key" not in data:
+        return jsonify({"error": "Missing 'text' or 'key'"}), 400
+
+    text = data.get("text")
+    key = data.get("key")
+
+    if not isinstance(text, str) or not isinstance(key, str):
+        return jsonify({"error": "Text and key must be strings"}), 400
+
+    try:
+        result = rc4_encrypt(key, text)
+        return jsonify({"ciphertext": result})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+    
+@crypto_bp.route("/rc4/decrypt", methods=["POST"])
+def decrypt_rc4():
+    data = request.get_json()
+
+    if not data or "text" not in data or "key" not in data:
+        return jsonify({"error": "Missing 'text' or 'key'"}), 400
+
+    text = data.get("text")  # hex
+    key = data.get("key")
+
+    if not isinstance(text, str) or not isinstance(key, str):
+        return jsonify({"error": "Text and key must be strings"}), 400
+
+    try:
+        result = rc4_decrypt(key, text)
         return jsonify({"plaintext": result})
     except Exception as e:
         return jsonify({"error": str(e)}), 400
