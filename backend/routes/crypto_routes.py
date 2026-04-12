@@ -1,14 +1,14 @@
 from flask import Blueprint, request, jsonify
-from Algorithmes.caesar import caesar_encrypt, caesar_decrypt
-from Algorithmes.affine import affine_encrypt, affine_decrypt
-from Algorithmes.hill import hill_encrypt, hill_decrypt
-from Algorithmes.playfaire import playfair_encrypt, playfair_decrypt
-from Algorithmes.vigenere import vigenere_encrypt, vigenere_decrypt
-from Algorithmes.RC4 import rc4_decrypt, rc4_encrypt
+from Algorithmes.Simple.caesar import caesar_encrypt, caesar_decrypt
+from Algorithmes.Simple.affine import affine_encrypt, affine_decrypt
+from Algorithmes.Simple.hill import hill_encrypt, hill_decrypt
+from Algorithmes.Simple.playfaire import playfair_encrypt, playfair_decrypt
+from Algorithmes.Simple.vigenere import vigenere_encrypt, vigenere_decrypt
+from Algorithmes.symetrique.RC4 import rc4_decrypt, rc4_encrypt
+from Algorithmes.symetrique.DES import des_encrypt, des_decrypt
 
 
 crypto_bp = Blueprint("crypto", __name__)
-
 @crypto_bp.route("/caesar/encrypt", methods=["POST"])
 
 def encrypt_caesar():
@@ -240,6 +240,7 @@ def encrypt_rc4():
     
 @crypto_bp.route("/rc4/decrypt", methods=["POST"])
 def decrypt_rc4():
+
     data = request.get_json()
 
     if not data or "text" not in data or "key" not in data:
@@ -253,6 +254,40 @@ def decrypt_rc4():
 
     try:
         result = rc4_decrypt(key, text)
+        return jsonify({"plaintext": result})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+    
+
+@crypto_bp.route("/des/encrypt", methods=["POST"])
+def encrypt_des():
+    data = request.get_json()
+
+    text = data.get("text")
+    key = data.get("key")
+
+    if not text or not key:
+        return jsonify({"error": "Missing text or key"}), 400
+
+    try:
+        result = des_encrypt(text, key)
+        return jsonify({"ciphertext": result})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+
+
+@crypto_bp.route("/des/decrypt", methods=["POST"])
+def decrypt_des():
+    data = request.get_json()
+
+    text = data.get("text")
+    key = data.get("key")
+
+    if not text or not key:
+        return jsonify({"error": "Missing text or key"}), 400
+
+    try:
+        result = des_decrypt(text, key)
         return jsonify({"plaintext": result})
     except Exception as e:
         return jsonify({"error": str(e)}), 400
