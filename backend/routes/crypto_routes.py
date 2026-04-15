@@ -6,6 +6,7 @@ from Algorithmes.Simple.playfaire import playfair_encrypt, playfair_decrypt
 from Algorithmes.Simple.vigenere import vigenere_encrypt, vigenere_decrypt
 from Algorithmes.symetrique.RC4 import rc4_decrypt, rc4_encrypt
 from Algorithmes.symetrique.DES import des_encrypt, des_decrypt
+from Algorithmes.symetrique.AES import aes_encrypt, aes_decrypt
 
 
 crypto_bp = Blueprint("crypto", __name__)
@@ -291,3 +292,50 @@ def decrypt_des():
         return jsonify({"plaintext": result})
     except Exception as e:
         return jsonify({"error": str(e)}), 400
+    
+@crypto_bp.route("/aes/encrypt", methods=["POST"])
+def encrypt_aes():
+    data = request.get_json(silent=True) or {}
+    text = data.get("text") or data.get("message")
+    key = data.get("key")
+
+    if not isinstance(text, str) or not isinstance(key, str):
+        return jsonify({"error": "text and key are required"}), 400
+
+    key_bytes = key.encode("utf-8")
+    if len(key_bytes) not in (16, 24, 32):
+        return jsonify({"error": "AES key must be 16, 24, or 32 bytes long"}), 400
+
+    try:
+        cipher = aes_encrypt(text.encode("utf-8"), key_bytes)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+
+    return jsonify({"ciphertext": cipher.hex()})
+
+
+@crypto_bp.route("/aes/decrypt", methods=["POST"])
+def decrypt_aes():
+    data = request.get_json(silent=True) or {}
+    ciphertext = data.get("ciphertext") or data.get("text")
+    key = data.get("key")
+
+    if not isinstance(ciphertext, str) or not isinstance(key, str):
+        return jsonify({"error": "ciphertext and key are required"}), 400
+
+    key_bytes = key.encode("utf-8")
+    if len(key_bytes) not in (16, 24, 32):
+        return jsonify({"error": "AES key must be 16, 24, or 32 bytes long"}), 400
+
+    try:
+        cipher_bytes = bytes.fromhex(ciphertext)
+        plain = aes_decrypt(cipher_bytes, key_bytes)
+        plaintext = plain.decode("utf-8")
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
+    except UnicodeDecodeError:
+        return jsonify({"error": "Decrypted data is not valid UTF-8 text"}), 400
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+
+    return jsonify({"plaintext": plaintext})
