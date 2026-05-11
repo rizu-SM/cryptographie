@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>RSA — Alice & Bob</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&family=Fira+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0f1a; --card: #151929; --border: #1e2540;
+    --alice: #6c63ff; --bob: #00d4aa;
+    --arrow: #f59e0b; --text: #e2e8f0; --muted: #64748b;
+    --success: #22c55e; --error: #ef4444;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; min-height: 100vh; }
+
+  header {
+    text-align: center; padding: 2.5rem 1rem 1.5rem;
+    background: linear-gradient(180deg, #0a0c18 0%, transparent 100%);
+  }
+  header h1 { font-size: 2.2rem; font-weight: 900; letter-spacing: -1px; }
+  header h1 span { color: var(--alice); }
+  header p { color: var(--muted); margin-top: .4rem; font-size: .95rem; }
+
+  /* ── PARAMS ── */
+  .params {
+    max-width: 500px; margin: 0 auto 2rem;
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 16px; padding: 1.4rem 1.6rem;
+  }
+  .params h3 { font-size: .85rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 1rem; }
+  .row { display: flex; gap: .8rem; align-items: center; margin-bottom: .8rem; flex-wrap: wrap; }
+  .row label { font-size: .85rem; color: var(--muted); min-width: 60px; }
+  .row input {
+    flex: 1; background: #0d0f1a; border: 1px solid var(--border);
+    color: var(--text); border-radius: 8px; padding: .45rem .8rem;
+    font-family: 'Fira Mono', monospace; font-size: .9rem; min-width: 80px;
+  }
+  .row input:focus { outline: none; border-color: var(--alice); }
+  .row span { font-size: .8rem; color: var(--muted); }
+
+  .btn-gen {
+    width: 100%; padding: .7rem; border-radius: 10px; border: none; cursor: pointer;
+    background: linear-gradient(135deg, var(--alice), #9c8fff);
+    color: #fff; font-weight: 700; font-size: .95rem; transition: opacity .2s;
+  }
+  .btn-gen:hover { opacity: .85; }
+  .btn-gen:disabled { opacity: .4; cursor: not-allowed; }
+
+  /* ── MAIN ARENA ── */
+  .arena {
+    max-width: 1100px; margin: 0 auto 3rem; padding: 0 1.2rem;
+    display: grid; grid-template-columns: 1fr 80px 1fr; gap: 0; align-items: start;
+  }
+
+  /* ── ENTITY CARD ── */
+  .entity { background: var(--card); border: 1px solid var(--border); border-radius: 20px; padding: 1.4rem; }
+  .entity-header { display: flex; align-items: center; gap: .8rem; margin-bottom: 1.2rem; }
+  .avatar {
+    width: 52px; height: 52px; border-radius: 50%; display: flex; align-items: center;
+    justify-content: center; font-size: 1.6rem; flex-shrink: 0;
+  }
+  .alice .avatar { background: linear-gradient(135deg,#6c63ff33,#6c63ff66); border: 2px solid var(--alice); }
+  .bob   .avatar { background: linear-gradient(135deg,#00d4aa22,#00d4aa55); border: 2px solid var(--bob); }
+  .entity-name { font-weight: 700; font-size: 1.1rem; }
+  .alice .entity-name { color: var(--alice); }
+  .bob   .entity-name { color: var(--bob); }
+  .entity-role { font-size: .8rem; color: var(--muted); }
+
+  .key-box { background: #0d0f1a; border-radius: 10px; padding: .9rem 1rem; margin-bottom: .8rem; font-family: 'Fira Mono', monospace; font-size: .78rem; }
+  .key-box .key-label { color: var(--muted); font-size: .7rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: .4rem; }
+  .key-box .key-val { color: #a78bfa; word-break: break-all; line-height: 1.5; }
+  .key-box.public .key-val { color: var(--bob); }
+
+  textarea.msg-input {
+    width: 100%; background: #0d0f1a; border: 1px solid var(--border);
+    color: var(--text); border-radius: 10px; padding: .7rem .9rem;
+    font-family: 'Fira Mono', monospace; font-size: .85rem; resize: none; height: 70px;
+    margin-bottom: .8rem;
+  }
+  textarea.msg-input:focus { outline: none; border-color: var(--bob); }
+
+  .btn-action {
+    width: 100%; padding: .6rem; border-radius: 9px; border: none; cursor: pointer;
+    font-weight: 700; font-size: .88rem; transition: opacity .2s; margin-bottom: .5rem;
+  }
+  .btn-encrypt { background: linear-gradient(135deg,var(--bob),#00a88a); color: #0d0f1a; }
+  .btn-decrypt { background: linear-gradient(135deg,var(--alice),#9c8fff); color: #fff; }
+  .btn-action:hover { opacity: .85; }
+  .btn-action:disabled { opacity: .35; cursor: not-allowed; }
+
+  .cipher-display { background: #0d0f1a; border-radius: 10px; padding: .85rem; font-family: 'Fira Mono', monospace; font-size: .76rem; color: var(--arrow); word-break: break-all; line-height: 1.6; min-height: 55px; }
+  .plain-display  { background: #0d0f1a; border-radius: 10px; padding: .85rem; font-family: 'Fira Mono', monospace; font-size: .9rem; color: var(--success); min-height: 55px; }
+
+  /* ── MIDDLE CHANNEL ── */
+  .channel {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding-top: 100px; gap: 1.2rem;
+  }
+  .arrow-wrap { display: flex; flex-direction: column; align-items: center; gap: .3rem; }
+  .arrow-label { font-size: .7rem; color: var(--muted); text-align: center; max-width: 70px; }
+  .arrow-svg { width: 60px; }
+  .arrow-svg path { stroke: var(--arrow); fill: none; stroke-width: 2; }
+  .arrow-svg polygon { fill: var(--arrow); }
+
+  .arrow-svg.pub path  { stroke: var(--bob); }
+  .arrow-svg.pub polygon { fill: var(--bob); }
+  .arrow-svg.cipher path  { stroke: var(--arrow); }
+  .arrow-svg.cipher polygon { fill: var(--arrow); }
+
+  /* ── STEPS LOG ── */
+  .steps { max-width: 700px; margin: 0 auto 3rem; padding: 0 1.2rem; }
+  .steps h2 { font-size: 1rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 1rem; }
+  .step-item {
+    background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+    padding: .9rem 1.1rem; margin-bottom: .6rem;
+    display: flex; gap: .9rem; align-items: flex-start; opacity: 0;
+    transform: translateY(10px); transition: all .4s;
+  }
+  .step-item.visible { opacity: 1; transform: none; }
+  .step-num {
+    width: 26px; height: 26px; border-radius: 50%; background: var(--alice);
+    color: #fff; font-size: .75rem; font-weight: 700;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .step-text { font-size: .88rem; line-height: 1.5; }
+  .step-text code { background: #0d0f1a; padding: .1rem .4rem; border-radius: 4px; font-family: 'Fira Mono', monospace; font-size: .8rem; color: var(--arrow); }
+
+  .tag { display: inline-block; font-size: .7rem; font-weight: 700; padding: .15rem .5rem; border-radius: 20px; margin-right: .4rem; }
+  .tag-alice { background: #6c63ff33; color: var(--alice); }
+  .tag-bob   { background: #00d4aa22; color: var(--bob); }
+
+  .status { text-align: center; font-size: .85rem; margin: .5rem 0; min-height: 1.2rem; color: var(--muted); }
+  .status.err { color: var(--error); }
+
+  .section-label { font-size: .7rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: .4rem; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>RSA — <span>Alice</span> & Bob</h1>
+  <p>Démonstration interactive du chiffrement asymétrique RSA</p>
+</header>
+
+<!-- PARAMS -->
+<div class="params">
+  <h3>Paramètres des clés</h3>
+  <div class="row">
+    <label>p =</label>
+    <input id="inp-p" type="number" value="7" min="2">
+    <label>q =</label>
+    <input id="inp-q" type="number" value="11" min="2">
+    <span>(petits premiers pour la démo)</span>
+  </div>
+  <button class="btn-gen" id="btn-gen" onclick="generateKeys()">🔑 Générer les clés RSA</button>
+  <div class="status" id="gen-status"></div>
+</div>
+
+<!-- ARENA -->
+<div class="arena">
+
+  <!-- ALICE -->
+  <div class="entity alice">
+    <div class="entity-header">
+      <div class="avatar">👩</div>
+      <div>
+        <div class="entity-name">Alice</div>
+        <div class="entity-role">Propriétaire des clés</div>
+      </div>
+    </div>
+
+    <div class="section-label">Clé privée (secrète 🔒)</div>
+    <div class="key-box" id="alice-priv">
+      <div class="key-label">n, d</div>
+      <div class="key-val">— en attente de génération —</div>
+    </div>
+
+    <div class="section-label">Clé publique (partagée 🌐)</div>
+    <div class="key-box public" id="alice-pub">
+      <div class="key-label">n, e</div>
+      <div class="key-val">— en attente de génération —</div>
+    </div>
+
+    <div class="section-label" style="margin-top:.8rem">Message déchiffré</div>
+    <div class="plain-display" id="alice-plain">—</div>
+
+    <button class="btn-action btn-decrypt" id="btn-decrypt" onclick="decryptMsg()" disabled style="margin-top:.8rem">
+      🔓 Déchiffrer avec clé privée
+    </button>
+  </div>
+
+  <!-- CHANNEL -->
+  <div class="channel">
+    <div class="arrow-wrap">
+      <div class="arrow-label">Clé publique</div>
+      <svg class="arrow-svg pub" viewBox="0 0 60 30">
+        <path d="M5 15 L48 15"/>
+        <polygon points="48,10 58,15 48,20"/>
+      </svg>
+    </div>
+    <div style="font-size:.65rem;color:var(--muted);text-align:center;line-height:1.4">
+      Canal<br>public
+    </div>
+    <div class="arrow-wrap">
+      <svg class="arrow-svg cipher" viewBox="0 0 60 30" style="transform:rotate(180deg)">
+        <path d="M5 15 L48 15"/>
+        <polygon points="48,10 58,15 48,20"/>
+      </svg>
+      <div class="arrow-label">Chiffré</div>
+    </div>
+  </div>
+
+  <!-- BOB -->
+  <div class="entity bob">
+    <div class="entity-header">
+      <div class="avatar">👨</div>
+      <div>
+        <div class="entity-name">Bob</div>
+        <div class="entity-role">Expéditeur du message</div>
+      </div>
+    </div>
+
+    <div class="section-label">Clé publique d'Alice (reçue 🌐)</div>
+    <div class="key-box public" id="bob-pub">
+      <div class="key-label">n, e</div>
+      <div class="key-val">— en attente —</div>
+    </div>
+
+    <div class="section-label" style="margin-top:.8rem">Message à envoyer</div>
+    <textarea class="msg-input" id="bob-msg" placeholder="Ex: HI  (ASCII < n=77)">HI</textarea>
+
+    <button class="btn-action btn-encrypt" id="btn-encrypt" onclick="encryptMsg()" disabled>
+      🔐 Chiffrer avec clé publique
+    </button>
+
+    <div class="section-label">Chiffré envoyé à Alice</div>
+    <div class="cipher-display" id="bob-cipher">—</div>
+  </div>
+
+</div>
+
+<!-- STEPS LOG -->
+<div class="steps">
+  <h2>📋 Journal des étapes</h2>
+  <div id="steps-log"></div>
+</div>
+
+<script>
+const API = 'http://127.0.0.1:5000/api';
+let keys = null;
+
+function addStep(num, html) {
+  const log = document.getElementById('steps-log');
+  const div = document.createElement('div');
+  div.className = 'step-item';
+  div.innerHTML = `<div class="step-num">${num}</div><div class="step-text">${html}</div>`;
+  log.appendChild(div);
+  setTimeout(() => div.classList.add('visible'), 50);
+}
+
+function setStatus(id, msg, isErr = false) {
+  const el = document.getElementById(id);
+  el.textContent = msg;
+  el.className = 'status' + (isErr ? ' err' : '');
+}
+
+async function generateKeys() {
+  const p = parseInt(document.getElementById('inp-p').value);
+  const q = parseInt(document.getElementById('inp-q').value);
+  document.getElementById('btn-gen').disabled = true;
+  setStatus('gen-status', 'Génération en cours...');
+  document.getElementById('steps-log').innerHTML = '';
+  document.getElementById('bob-cipher').textContent = '—';
+  document.getElementById('alice-plain').textContent = '—';
+
+  try {
+    const res = await fetch(`${API}/rsa/generate-keys`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ p, q })
+    });
+    keys = await res.json();
+    if (keys.error) throw new Error(keys.error);
+
+    // Afficher chez Alice
+    document.getElementById('alice-priv').innerHTML =
+      `<div class="key-label">Clé PRIVÉE (secrète)</div>
+       <div class="key-val">n = ${keys.n}<br>d = ${keys.private_key.d}</div>`;
+    document.getElementById('alice-pub').innerHTML =
+      `<div class="key-label">Clé PUBLIQUE (partagée)</div>
+       <div class="key-val">n = ${keys.n}<br>e = ${keys.public_key.e}</div>`;
+
+    // Afficher chez Bob
+    document.getElementById('bob-pub').innerHTML =
+      `<div class="key-label">Clé publique d'Alice (reçue)</div>
+       <div class="key-val">n = ${keys.n}<br>e = ${keys.public_key.e}</div>`;
+
+    document.getElementById('btn-encrypt').disabled = false;
+    setStatus('gen-status', `✓ Clés générées : n=${keys.n}, φ(n)=${keys.phi}`);
+
+    // Steps log
+    addStep(1, `<span class="tag tag-alice">Alice</span> Choisit deux premiers : <code>p = ${keys.p}</code>, <code>q = ${keys.q}</code>`);
+    addStep(2, `<span class="tag tag-alice">Alice</span> Calcule le module : <code>n = p × q = ${keys.p} × ${keys.q} = ${keys.n}</code>`);
+    addStep(3, `<span class="tag tag-alice">Alice</span> Calcule φ(n) = (p−1)(q−1) = <code>${keys.p-1} × ${keys.q-1} = ${keys.phi}</code>`);
+    addStep(4, `<span class="tag tag-alice">Alice</span> Choisit <code>e = ${keys.public_key.e}</code> tel que pgcd(e, φ(n)) = 1`);
+    addStep(5, `<span class="tag tag-alice">Alice</span> Calcule <code>d = e⁻¹ mod φ(n) = ${keys.private_key.d}</code> (Euclide étendu)`);
+    addStep(6, `<span class="tag tag-alice">Alice</span> Publie la clé publique <code>(n=${keys.n}, e=${keys.public_key.e})</code> et garde <code>d=${keys.private_key.d}</code> secret`);
+    addStep(7, `<span class="tag tag-bob">Bob</span> Reçoit la clé publique d'Alice : <code>(n=${keys.n}, e=${keys.public_key.e})</code>`);
+
+  } catch(err) {
+    setStatus('gen-status', '✗ ' + err.message, true);
+  }
+  document.getElementById('btn-gen').disabled = false;
+}
+
+async function encryptMsg() {
+  if (!keys) return;
+  const text = document.getElementById('bob-msg').value.trim();
+  if (!text) return;
+  document.getElementById('btn-encrypt').disabled = true;
+
+  try {
+    const res = await fetch(`${API}/rsa/encrypt`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ text, n: keys.n, e: keys.public_key.e })
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+
+    const cArr = data.ciphertext;
+    document.getElementById('bob-cipher').textContent = '[' + cArr.join(', ') + ']';
+    document.getElementById('btn-decrypt').disabled = false;
+
+    // Steps
+    const chars = text.split('').map((c,i) =>
+      `<code>${c}</code>(${c.charCodeAt(0)})<sup>e</sup> mod n = <code>${cArr[i]}</code>`
+    ).join(', ');
+    addStep(8, `<span class="tag tag-bob">Bob</span> Chiffre chaque caractère : c = m<sup>${keys.public_key.e}</sup> mod ${keys.n}<br>${chars}`);
+    addStep(9, `<span class="tag tag-bob">Bob</span> Envoie le chiffré à Alice : <code>[${cArr.join(', ')}]</code>`);
+
+  } catch(err) {
+    document.getElementById('bob-cipher').textContent = '✗ ' + err.message;
+  }
+  document.getElementById('btn-encrypt').disabled = false;
+}
+
+async function decryptMsg() {
+  if (!keys) return;
+  const cipherText = document.getElementById('bob-cipher').textContent;
+  const cArr = JSON.parse(cipherText);
+  document.getElementById('btn-decrypt').disabled = true;
+
+  try {
+    const res = await fetch(`${API}/rsa/decrypt`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ ciphertext: cArr, n: keys.n, d: keys.private_key.d })
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+
+    document.getElementById('alice-plain').textContent = data.plaintext;
+
+    const decSteps = cArr.map((c,i) =>
+      `<code>${c}</code><sup>${keys.private_key.d}</sup> mod ${keys.n} = <code>${data.plaintext.charCodeAt(i)}</code> → '${data.plaintext[i]}'`
+    ).join('<br>');
+    addStep(10, `<span class="tag tag-alice">Alice</span> Déchiffre avec sa clé privée d=${keys.private_key.d} : m = c<sup>d</sup> mod n<br>${decSteps}`);
+    addStep(11, `<span class="tag tag-alice">Alice</span> ✅ Message récupéré : <code>"${data.plaintext}"</code>`);
+
+  } catch(err) {
+    document.getElementById('alice-plain').textContent = '✗ ' + err.message;
+  }
+  document.getElementById('btn-decrypt').disabled = false;
+}
+</script>
+</body>
+</html>

@@ -7,6 +7,7 @@ from Algorithmes.Simple.vigenere import vigenere_encrypt, vigenere_decrypt
 from Algorithmes.symetrique.RC4 import rc4_decrypt, rc4_encrypt
 from Algorithmes.symetrique.DES import des_encrypt, des_decrypt
 from Algorithmes.symetrique.AES import aes_encrypt, aes_decrypt
+from Algorithmes.Asymetrique.RSA import generate_keys, generate_keys_from_pq, rsa_encrypt, rsa_decrypt
 
 
 crypto_bp = Blueprint("crypto", __name__)
@@ -339,3 +340,84 @@ def decrypt_aes():
         return jsonify({"error": str(e)}), 400
 
     return jsonify({"plaintext": plaintext})
+
+
+# ==================== RSA ====================
+
+@crypto_bp.route("/rsa/generate-keys", methods=["POST"])
+def rsa_generate_keys():
+    """
+    Genere une paire de cles RSA.
+    Option A - petits premiers : { "p": 7, "q": 11 }
+    Option B - aleatoire       : { "bits": 512 }  (512, 1024 ou 2048)
+    Retourne : { p, q, n, phi, public_key:{n,e}, private_key:{n,d} }
+    """
+    data = request.get_json(silent=True) or {}
+    p    = data.get("p")
+    q    = data.get("q")
+    bits = data.get("bits", 512)
+
+    try:
+        if p is not None and q is not None:
+            keys = generate_keys_from_pq(int(p), int(q))
+        else:
+            if bits not in (512, 1024, 2048):
+                return jsonify({"error": "bits doit etre 512, 1024 ou 2048"}), 400
+            keys = generate_keys(bits)
+        return jsonify(keys)
+    except ValueError as err:
+        return jsonify({"error": str(err)}), 400
+    except Exception as err:
+        return jsonify({"error": str(err)}), 500
+
+
+@crypto_bp.route("/rsa/encrypt", methods=["POST"])
+def encrypt_rsa():
+    """
+    Chiffre un message avec la cle publique RSA (chiffrement direct, sans padding).
+    Body JSON : { "text": "...", "n": <int>, "e": <int> }
+    Retourne  : { "ciphertext": [c1, c2, ...] }   (liste d'entiers)
+    """
+    data = request.get_json(silent=True) or {}
+    text = data.get("text")
+    n    = data.get("n")
+    e    = data.get("e")
+
+    if not isinstance(text, str) or not text:
+        return jsonify({"error": "Le champ 'text' est requis"}), 400
+    if n is None or e is None:
+        return jsonify({"error": "Les champs 'n' et 'e' sont requis"}), 400
+
+    try:
+        ciphertext = rsa_encrypt(text, int(n), int(e))
+        return jsonify({"ciphertext": ciphertext})
+    except ValueError as err:
+        return jsonify({"error": str(err)}), 400
+    except Exception as err:
+        return jsonify({"error": str(err)}), 500
+
+
+@crypto_bp.route("/rsa/decrypt", methods=["POST"])
+def decrypt_rsa():
+    """
+    Dechiffre un chiffre RSA avec la cle privee.
+    Body JSON : { "ciphertext": [c1, c2, ...], "n": <int>, "d": <int> }
+    Retourne  : { "plaintext": "..." }
+    """
+    data       = request.get_json(silent=True) or {}
+    ciphertext = data.get("ciphertext")
+    n          = data.get("n")
+    d          = data.get("d")
+
+    if not isinstance(ciphertext, list) or not ciphertext:
+        return jsonify({"error": "Le champ 'ciphertext' doit etre une liste d'entiers"}), 400
+    if n is None or d is None:
+        return jsonify({"error": "Les champs 'n' et 'd' sont requis"}), 400
+
+    try:
+        plaintext = rsa_decrypt(ciphertext, int(n), int(d))
+        return jsonify({"plaintext": plaintext})
+    except ValueError as err:
+        return jsonify({"error": str(err)}), 400
+    except Exception as err:
+        return jsonify({"error": str(err)}), 500
