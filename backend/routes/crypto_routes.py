@@ -8,6 +8,7 @@ from Algorithmes.symetrique.RC4 import rc4_decrypt, rc4_encrypt
 from Algorithmes.symetrique.DES import des_encrypt, des_decrypt
 from Algorithmes.symetrique.AES import aes_encrypt, aes_decrypt
 from Algorithmes.Asymetrique.RSA import generate_keys, generate_keys_from_pq, rsa_encrypt, rsa_decrypt
+from Algorithmes.Asymetrique.ElGamal import generate_keys as elgamal_generate_keys, elgamal_encrypt_int, elgamal_decrypt_int
 
 
 crypto_bp = Blueprint("crypto", __name__)
@@ -417,6 +418,66 @@ def decrypt_rsa():
     try:
         plaintext = rsa_decrypt(ciphertext, int(n), int(d))
         return jsonify({"plaintext": plaintext})
+    except ValueError as err:
+        return jsonify({"error": str(err)}), 400
+    except Exception as err:
+        return jsonify({"error": str(err)}), 500
+
+
+# ==================== ELGAMAL ====================
+
+@crypto_bp.route("/elgamal/generate-keys", methods=["POST"])
+def elgamal_keys():
+    data = request.get_json(silent=True) or {}
+
+    try:
+        keys = elgamal_generate_keys(
+            bits=int(data.get("bits", 32)),
+            p=data.get("p"),
+            g=data.get("g"),
+            s=data.get("s"),
+        )
+        return jsonify(keys)
+    except ValueError as err:
+        return jsonify({"error": str(err)}), 400
+    except Exception as err:
+        return jsonify({"error": str(err)}), 500
+
+
+@crypto_bp.route("/elgamal/encrypt", methods=["POST"])
+def encrypt_elgamal():
+    data = request.get_json(silent=True) or {}
+    M = data.get("M")
+    y = data.get("y")
+    g = data.get("g")
+    p = data.get("p")
+
+    if M is None or y is None or g is None or p is None:
+        return jsonify({"error": "Les champs 'M', 'y', 'g' et 'p' sont requis"}), 400
+
+    try:
+        C1, C2 = elgamal_encrypt_int(M, y, g, p, data.get("k"))
+        return jsonify({"ciphertext": {"C1": C1, "C2": C2}})
+    except ValueError as err:
+        return jsonify({"error": str(err)}), 400
+    except Exception as err:
+        return jsonify({"error": str(err)}), 500
+
+
+@crypto_bp.route("/elgamal/decrypt", methods=["POST"])
+def decrypt_elgamal():
+    data = request.get_json(silent=True) or {}
+    C1 = data.get("C1")
+    C2 = data.get("C2")
+    s = data.get("s")
+    p = data.get("p")
+
+    if C1 is None or C2 is None or s is None or p is None:
+        return jsonify({"error": "Les champs 'C1', 'C2', 's' et 'p' sont requis"}), 400
+
+    try:
+        M = elgamal_decrypt_int(C1, C2, s, p)
+        return jsonify({"plaintext": M})
     except ValueError as err:
         return jsonify({"error": str(err)}), 400
     except Exception as err:
