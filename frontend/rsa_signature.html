@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Signature RSA - Alice vers Bob</title>
+<style>
+  :root {
+    --bg: #0b1020;
+    --surface: #121a2c;
+    --surface-2: #172238;
+    --line: #26354f;
+    --text: #edf2f7;
+    --muted: #9aa8bd;
+    --alice: #7c9cff;
+    --bob: #2dd4bf;
+    --accent: #f6b44b;
+    --danger: #fb7185;
+    --ok: #70e08f;
+    --ink: #08111f;
+    --radius: 8px;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background: var(--bg);
+    color: var(--text);
+    font-family: Inter, Segoe UI, Arial, sans-serif;
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+  }
+
+  button {
+    border: 0;
+    cursor: pointer;
+  }
+
+  button:disabled {
+    cursor: not-allowed;
+    opacity: .48;
+  }
+
+  .shell {
+    width: min(1280px, calc(100% - 32px));
+    margin: 0 auto;
+    padding: 28px 0 40px;
+  }
+
+  .topbar {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 16px;
+    align-items: end;
+    margin-bottom: 18px;
+  }
+
+  h1 {
+    margin: 0 0 8px;
+    font-size: clamp(1.8rem, 4vw, 3.2rem);
+    line-height: 1;
+    letter-spacing: 0;
+  }
+
+  .subtitle {
+    margin: 0;
+    color: var(--muted);
+    max-width: 760px;
+    line-height: 1.5;
+  }
+
+  .api-box {
+    display: grid;
+    gap: 6px;
+    min-width: min(360px, 100%);
+  }
+
+  .api-box label,
+  .label {
+    color: var(--muted);
+    font-size: .72rem;
+    font-weight: 800;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+  }
+
+  .api-box input,
+  .field,
+  textarea,
+  select {
+    width: 100%;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: #0d1526;
+    color: var(--text);
+    padding: 10px 12px;
+    outline: none;
+  }
+
+  .api-box input:focus,
+  .field:focus,
+  textarea:focus,
+  select:focus {
+    border-color: var(--alice);
+  }
+
+  .controls {
+    display: grid;
+    grid-template-columns: 1.15fr 1.15fr 1fr;
+    gap: 14px;
+    margin-bottom: 16px;
+  }
+
+  .panel {
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--surface);
+    padding: 16px;
+  }
+
+  .panel-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+
+  .panel-title h2 {
+    margin: 0;
+    font-size: 1rem;
+    letter-spacing: 0;
+  }
+
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    min-height: 24px;
+    border-radius: 999px;
+    padding: 3px 10px;
+    font-size: .72rem;
+    font-weight: 800;
+    color: var(--ink);
+  }
+
+  .pill.alice {
+    background: var(--alice);
+  }
+
+  .pill.bob {
+    background: var(--bob);
+  }
+
+  .pill.neutral {
+    background: var(--accent);
+  }
+
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .stack {
+    display: grid;
+    gap: 10px;
+  }
+
+  .btn-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 12px;
+  }
+
+  .btn {
+    min-height: 40px;
+    border-radius: var(--radius);
+    padding: 0 14px;
+    font-weight: 800;
+    color: var(--ink);
+    background: var(--accent);
+  }
+
+  .btn.primary {
+    background: var(--alice);
+  }
+
+  .btn.success {
+    background: var(--bob);
+  }
+
+  .btn.danger {
+    background: var(--danger);
+  }
+
+  .arena {
+    display: grid;
+    grid-template-columns: 1fr 170px 1fr;
+    gap: 14px;
+    align-items: stretch;
+  }
+
+  .person {
+    display: grid;
+    grid-template-rows: auto 1fr;
+    min-height: 610px;
+  }
+
+  .person-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    margin-bottom: 14px;
+  }
+
+  .name {
+    display: grid;
+    gap: 4px;
+  }
+
+  .name strong {
+    font-size: 1.25rem;
+  }
+
+  .name span {
+    color: var(--muted);
+    font-size: .85rem;
+  }
+
+  .key-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .readout {
+    min-height: 68px;
+    border: 1px solid #1f2c42;
+    border-radius: var(--radius);
+    background: #0d1526;
+    padding: 10px;
+    color: var(--text);
+    overflow-wrap: anywhere;
+    line-height: 1.45;
+    font-family: Consolas, Menlo, monospace;
+    font-size: .84rem;
+  }
+
+  .readout.compact {
+    min-height: 42px;
+  }
+
+  .readout.ok {
+    border-color: rgba(112, 224, 143, .65);
+    color: var(--ok);
+  }
+
+  .readout.bad {
+    border-color: rgba(251, 113, 133, .75);
+    color: var(--danger);
+  }
+
+  textarea {
+    min-height: 92px;
+    resize: vertical;
+    line-height: 1.4;
+  }
+
+  .flow {
+    display: grid;
+    align-content: center;
+    gap: 12px;
+    min-height: 610px;
+  }
+
+  .flow-node {
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--surface-2);
+    padding: 12px;
+    text-align: center;
+  }
+
+  .flow-node strong {
+    display: block;
+    margin-bottom: 5px;
+    font-size: .88rem;
+  }
+
+  .flow-node span {
+    color: var(--muted);
+    font-size: .8rem;
+    line-height: 1.35;
+  }
+
+  .arrow {
+    height: 44px;
+    position: relative;
+  }
+
+  .arrow::before {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: var(--accent);
+  }
+
+  .arrow::after {
+    content: "";
+    position: absolute;
+    left: calc(50% - 6px);
+    bottom: 0;
+    width: 12px;
+    height: 12px;
+    border-right: 2px solid var(--accent);
+    border-bottom: 2px solid var(--accent);
+    transform: rotate(45deg);
+  }
+
+  .steps {
+    margin-top: 16px;
+  }
+
+  .steps h2 {
+    margin: 0 0 10px;
+    color: var(--muted);
+    font-size: .82rem;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+  }
+
+  .step-list {
+    display: grid;
+    gap: 8px;
+  }
+
+  .step {
+    display: grid;
+    grid-template-columns: 34px 1fr;
+    gap: 10px;
+    align-items: start;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--surface);
+    padding: 10px;
+  }
+
+  .num {
+    width: 28px;
+    height: 28px;
+    display: grid;
+    place-items: center;
+    border-radius: 999px;
+    background: var(--surface-2);
+    color: var(--accent);
+    font-weight: 900;
+  }
+
+  .step p {
+    margin: 0;
+    color: var(--text);
+    line-height: 1.45;
+  }
+
+  code {
+    border-radius: 5px;
+    background: #0d1526;
+    color: var(--accent);
+    padding: 1px 5px;
+    font-family: Consolas, Menlo, monospace;
+    overflow-wrap: anywhere;
+  }
+
+  .status {
+    min-height: 22px;
+    margin-top: 10px;
+    color: var(--muted);
+    font-size: .9rem;
+  }
+
+  .status.error {
+    color: var(--danger);
+  }
+
+  .status.good {
+    color: var(--ok);
+  }
+
+  @media (max-width: 980px) {
+    .topbar,
+    .controls,
+    .arena {
+      grid-template-columns: 1fr;
+    }
+
+    .flow {
+      min-height: 0;
+      grid-template-columns: repeat(4, 1fr);
+    }
+
+    .arrow {
+      display: none;
+    }
+
+    .person {
+      min-height: 0;
+    }
+  }
+
+  @media (max-width: 620px) {
+    .shell {
+      width: min(100% - 20px, 1280px);
+      padding-top: 16px;
+    }
+
+    .grid-2,
+    .key-grid,
+    .flow {
+      grid-template-columns: 1fr;
+    }
+
+    .btn {
+      width: 100%;
+    }
+  }
+</style>
+</head>
+<body>
+<main class="shell">
+  <section class="topbar">
+    <div>
+      <h1>Signature numerique RSA</h1>
+      <p class="subtitle">
+        A calcule une empreinte du message, la signe avec sa cle privee, ajoute la signature au message,
+        puis chiffre le tout avec la cle publique de B.
+      </p>
+    </div>
+    <div class="api-box">
+      <label for="api-base">API backend</label>
+      <input id="api-base" value="http://127.0.0.1:5000/api">
+    </div>
+  </section>
+
+  <section class="controls">
+    <div class="panel">
+      <div class="panel-title">
+        <h2>Cles de A</h2>
+        <span class="pill alice">emetteur</span>
+      </div>
+      <div class="grid-2">
+        <label class="stack">
+          <span class="label">p</span>
+          <input class="field" id="alice-p" type="number" value="61" min="2">
+        </label>
+        <label class="stack">
+          <span class="label">q</span>
+          <input class="field" id="alice-q" type="number" value="53" min="2">
+        </label>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">
+        <h2>Cles de B</h2>
+        <span class="pill bob">recepteur</span>
+      </div>
+      <div class="grid-2">
+        <label class="stack">
+          <span class="label">p</span>
+          <input class="field" id="bob-p" type="number" value="67" min="2">
+        </label>
+        <label class="stack">
+          <span class="label">q</span>
+          <input class="field" id="bob-q" type="number" value="71" min="2">
+        </label>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">
+        <h2>Operations</h2>
+        <span class="pill neutral">demo</span>
+      </div>
+      <label class="stack">
+        <span class="label">hachage</span>
+        <select id="hash-algo">
+          <option value="sha256" selected>SHA-256</option>
+          <option value="sha1">SHA-1</option>
+          <option value="md5">MD5</option>
+          <option value="md4">MD4</option>
+          <option value="sha512">SHA-512</option>
+        </select>
+      </label>
+      <div class="btn-row">
+        <button class="btn primary" id="btn-keys" onclick="generateBothKeys()">Generer les cles</button>
+        <button class="btn success" id="btn-run" onclick="signAndEncrypt()" disabled>Signer et chiffrer</button>
+        <button class="btn" id="btn-verify" onclick="decryptAndVerify()" disabled>Verifier chez B</button>
+      </div>
+      <div class="status" id="main-status"></div>
+    </div>
+  </section>
+
+  <section class="arena">
+    <article class="panel person">
+      <div>
+        <div class="person-head">
+          <div class="name">
+            <strong>Alice / A</strong>
+            <span>Possede la cle privee qui cree la signature</span>
+          </div>
+          <span class="pill alice">signature</span>
+        </div>
+
+        <div class="key-grid">
+          <div class="stack">
+            <span class="label">cle publique A</span>
+            <div class="readout compact" id="alice-public">n = -, e = -</div>
+          </div>
+          <div class="stack">
+            <span class="label">cle privee A</span>
+            <div class="readout compact" id="alice-private">n = -, d = -</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="stack">
+        <label class="stack">
+          <span class="label">message M</span>
+          <textarea id="message">HI</textarea>
+        </label>
+
+        <div class="stack">
+          <span class="label">empreinte E = H(M)</span>
+          <div class="readout" id="hash-out">-</div>
+        </div>
+
+        <div class="stack">
+          <span class="label">signature S = H(M)^d mod n</span>
+          <div class="readout" id="signature-out">-</div>
+        </div>
+
+        <div class="stack">
+          <span class="label">payload M :: S</span>
+          <div class="readout" id="payload-out">-</div>
+        </div>
+      </div>
+    </article>
+
+    <aside class="flow">
+      <div class="flow-node">
+        <strong>1. H(M)</strong>
+        <span>empreinte calculee chez A</span>
+      </div>
+      <div class="arrow"></div>
+      <div class="flow-node">
+        <strong>2. S = E^d_A mod n_A</strong>
+        <span>signature avec cle privee de A</span>
+      </div>
+      <div class="arrow"></div>
+      <div class="flow-node">
+        <strong>3. M :: S</strong>
+        <span>message concatene avec signature</span>
+      </div>
+      <div class="arrow"></div>
+      <div class="flow-node">
+        <strong>4. RSA public B</strong>
+        <span>payload chiffre pour B</span>
+      </div>
+    </aside>
+
+    <article class="panel person">
+      <div>
+        <div class="person-head">
+          <div class="name">
+            <strong>Bob / B</strong>
+            <span>Dechiffre avec sa cle privee puis verifie avec la cle publique de A</span>
+          </div>
+          <span class="pill bob">verification</span>
+        </div>
+
+        <div class="key-grid">
+          <div class="stack">
+            <span class="label">cle publique B</span>
+            <div class="readout compact" id="bob-public">n = -, e = -</div>
+          </div>
+          <div class="stack">
+            <span class="label">cle privee B</span>
+            <div class="readout compact" id="bob-private">n = -, d = -</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="stack">
+        <div class="stack">
+          <span class="label">ciphertext envoye a B</span>
+          <div class="readout" id="cipher-out">-</div>
+        </div>
+
+        <div class="stack">
+          <span class="label">message dechiffre M'</span>
+          <div class="readout" id="message-out">-</div>
+        </div>
+
+        <div class="stack">
+          <span class="label">comparaison des empreintes</span>
+          <div class="readout" id="compare-out">-</div>
+        </div>
+
+        <div class="stack">
+          <span class="label">resultat</span>
+          <div class="readout compact" id="result-out">-</div>
+        </div>
+
+        <button class="btn danger" id="btn-tamper" onclick="tamperVerification()" disabled>
+          Tester avec message modifie
+        </button>
+      </div>
+    </article>
+  </section>
+
+  <section class="steps">
+    <h2>Journal des etapes</h2>
+    <div class="step-list" id="steps-log"></div>
+  </section>
+</main>
+
+<script>
+let aliceKeys = null;
+let bobKeys = null;
+let signedPacket = null;
+let stepCount = 0;
+
+function apiBase() {
+  return document.getElementById('api-base').value.replace(/\/+$/, '');
+}
+
+function setStatus(text, kind = '') {
+  const el = document.getElementById('main-status');
+  el.textContent = text;
+  el.className = 'status' + (kind ? ` ${kind}` : '');
+}
+
+function setReadout(id, value, kind = '') {
+  const el = document.getElementById(id);
+  el.textContent = value;
+  el.className = 'readout' + (id === 'result-out' ? ' compact' : '') + (kind ? ` ${kind}` : '');
+}
+
+function addStep(html) {
+  stepCount += 1;
+  const item = document.createElement('div');
+  item.className = 'step';
+  item.innerHTML = `<div class="num">${stepCount}</div><p>${html}</p>`;
+  document.getElementById('steps-log').appendChild(item);
+}
+
+function resetFlow(keepKeys = true) {
+  signedPacket = null;
+  stepCount = 0;
+  document.getElementById('steps-log').innerHTML = '';
+  setReadout('hash-out', '-');
+  setReadout('signature-out', '-');
+  setReadout('payload-out', '-');
+  setReadout('cipher-out', '-');
+  setReadout('message-out', '-');
+  setReadout('compare-out', '-');
+  setReadout('result-out', '-');
+  document.getElementById('btn-verify').disabled = true;
+  document.getElementById('btn-tamper').disabled = true;
+  if (!keepKeys) {
+    aliceKeys = null;
+    bobKeys = null;
+    document.getElementById('btn-run').disabled = true;
+  }
+}
+
+async function postJson(path, body) {
+  const res = await fetch(`${apiBase()}${path}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  const data = await res.json();
+  if (!res.ok || data.error) {
+    throw new Error(data.error || `Erreur HTTP ${res.status}`);
+  }
+  return data;
+}
+
+function showKeys() {
+  document.getElementById('alice-public').textContent =
+    `n = ${aliceKeys.n}, e = ${aliceKeys.public_key.e}`;
+  document.getElementById('alice-private').textContent =
+    `n = ${aliceKeys.n}, d = ${aliceKeys.private_key.d}`;
+  document.getElementById('bob-public').textContent =
+    `n = ${bobKeys.n}, e = ${bobKeys.public_key.e}`;
+  document.getElementById('bob-private').textContent =
+    `n = ${bobKeys.n}, d = ${bobKeys.private_key.d}`;
+}
+
+async function generateBothKeys() {
+  resetFlow(false);
+  document.getElementById('btn-keys').disabled = true;
+  setStatus('Generation des deux paires de cles...');
+
+  try {
+    const aliceP = parseInt(document.getElementById('alice-p').value, 10);
+    const aliceQ = parseInt(document.getElementById('alice-q').value, 10);
+    const bobP = parseInt(document.getElementById('bob-p').value, 10);
+    const bobQ = parseInt(document.getElementById('bob-q').value, 10);
+
+    aliceKeys = await postJson('/rsa/generate-keys', { p: aliceP, q: aliceQ });
+    bobKeys = await postJson('/rsa/generate-keys', { p: bobP, q: bobQ });
+    showKeys();
+
+    addStep(`A genere sa paire RSA: cle publique <code>(n=${aliceKeys.n}, e=${aliceKeys.public_key.e})</code>, cle privee <code>d=${aliceKeys.private_key.d}</code>.`);
+    addStep(`B genere sa paire RSA: cle publique <code>(n=${bobKeys.n}, e=${bobKeys.public_key.e})</code>, cle privee <code>d=${bobKeys.private_key.d}</code>.`);
+    document.getElementById('btn-run').disabled = false;
+    setStatus('Cles pretes. Tu peux signer et chiffrer le message.', 'good');
+  } catch (err) {
+    setStatus(err.message, 'error');
+  } finally {
+    document.getElementById('btn-keys').disabled = false;
+  }
+}
+
+async function signAndEncrypt() {
+  if (!aliceKeys || !bobKeys) return;
+  resetFlow(true);
+  document.getElementById('btn-run').disabled = true;
+  setStatus('Signature par A puis chiffrement avec la cle publique de B...');
+
+  try {
+    const message = document.getElementById('message').value;
+    const hashAlgorithm = document.getElementById('hash-algo').value;
+    signedPacket = await postJson('/signature/rsa/sign-and-encrypt', {
+      message,
+      hash_algorithm: hashAlgorithm,
+      signer_n: aliceKeys.n,
+      signer_d: aliceKeys.private_key.d,
+      receiver_n: bobKeys.n,
+      receiver_e: bobKeys.public_key.e
+    });
+
+    setReadout('hash-out', `${signedPacket.hash_algorithm}: ${signedPacket.hash}\nH(M) mod n_A = ${signedPacket.hash_mod_n}`);
+    setReadout('signature-out', String(signedPacket.signature));
+    setReadout('payload-out', signedPacket.signed_payload);
+    setReadout('cipher-out', `[${signedPacket.ciphertext.join(', ')}]`);
+
+    addStep(`A calcule l'empreinte <code>E = H(M)</code>. Valeur modulo <code>n_A</code>: <code>${signedPacket.hash_mod_n}</code>.`);
+    addStep(`A signe l'empreinte avec sa cle privee: <code>S = E^d_A mod n_A = ${signedPacket.signature}</code>.`);
+    addStep(`A concatene le message et la signature: <code>M :: S</code>.`);
+    addStep(`A chiffre le payload avec la cle publique de B: <code>C = payload^e_B mod n_B</code> caractere par caractere.`);
+
+    document.getElementById('btn-verify').disabled = false;
+    setStatus('Message signe et chiffre. Bob peut maintenant verifier.', 'good');
+  } catch (err) {
+    setStatus(err.message, 'error');
+  } finally {
+    document.getElementById('btn-run').disabled = false;
+  }
+}
+
+async function decryptAndVerify() {
+  if (!signedPacket || !aliceKeys || !bobKeys) return;
+  document.getElementById('btn-verify').disabled = true;
+  setStatus('Bob dechiffre puis verifie la signature...');
+
+  try {
+    const result = await postJson('/signature/rsa/decrypt-and-verify', {
+      ciphertext: signedPacket.ciphertext,
+      hash_algorithm: signedPacket.hash_algorithm,
+      receiver_n: bobKeys.n,
+      receiver_d: bobKeys.private_key.d,
+      signer_n: aliceKeys.n,
+      signer_e: aliceKeys.public_key.e
+    });
+
+    const kind = result.valid ? 'ok' : 'bad';
+    setReadout('message-out', result.message);
+    setReadout(
+      'compare-out',
+      `S^e_A mod n_A = ${result.decrypted_hash_mod_n}\nH(M') mod n_A = ${result.expected_hash_mod_n}`,
+      kind
+    );
+    setReadout('result-out', result.valid ? 'Signature valide' : 'Signature invalide', kind);
+
+    addStep(`B dechiffre le ciphertext avec sa cle privee et recupere <code>M'</code> et <code>S'</code>.`);
+    addStep(`B applique la cle publique de A sur la signature: <code>S'^e_A mod n_A = ${result.decrypted_hash_mod_n}</code>.`);
+    addStep(`B compare avec l'empreinte du message recu: <code>H(M') mod n_A = ${result.expected_hash_mod_n}</code>.`);
+    addStep(result.valid ? `Verification terminee: <code>signature valide</code>.` : `Verification terminee: <code>signature invalide</code>.`);
+
+    document.getElementById('btn-tamper').disabled = false;
+    setStatus('Verification terminee.', result.valid ? 'good' : 'error');
+  } catch (err) {
+    setStatus(err.message, 'error');
+  } finally {
+    document.getElementById('btn-verify').disabled = false;
+  }
+}
+
+async function tamperVerification() {
+  if (!signedPacket || !aliceKeys) return;
+  setStatus('Test avec un message modifie, mais la meme signature...');
+
+  try {
+    const changed = `${signedPacket.message}!`;
+    const result = await postJson('/signature/rsa/verify', {
+      message: changed,
+      signature: signedPacket.signature,
+      hash_algorithm: signedPacket.hash_algorithm,
+      n: aliceKeys.n,
+      e: aliceKeys.public_key.e
+    });
+
+    setReadout(
+      'compare-out',
+      `Message teste: ${changed}\nS^e_A mod n_A = ${result.decrypted_hash_mod_n}\nH(message modifie) mod n_A = ${result.expected_hash_mod_n}`,
+      result.valid ? 'ok' : 'bad'
+    );
+    setReadout('result-out', result.valid ? 'Signature valide' : 'Signature invalide', result.valid ? 'ok' : 'bad');
+    addStep(`Test anti-modification: avec <code>${changed}</code>, la comparaison echoue et prouve que le message a change.`);
+    setStatus('Le message modifie est rejete.', 'error');
+  } catch (err) {
+    setStatus(err.message, 'error');
+  }
+}
+
+generateBothKeys();
+</script>
+</body>
+</html>

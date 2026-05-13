@@ -1,5 +1,10 @@
 from flask import Blueprint, jsonify, request
 
+from Algorithmes.Signature.DSA import (
+    dsa_sign,
+    dsa_verify,
+    generate_keys as generate_dsa_keys,
+)
 from Algorithmes.Signature.ElGamal import (
     elgamal_sign,
     elgamal_verify,
@@ -38,6 +43,75 @@ def sign_rsa():
 
     try:
         return jsonify(rsa_sign(text, n, d, hash_algorithm))
+    except ValueError as err:
+        return jsonify({"error": str(err)}), 400
+    except Exception as err:
+        return jsonify({"error": str(err)}), 500
+
+
+@signature_bp.route("/signature/dsa/generate-keys", methods=["POST"])
+def generate_dsa_signature():
+    data = request.get_json(silent=True) or {}
+
+    try:
+        keys = generate_dsa_keys(
+            p=data.get("p"),
+            q=data.get("q"),
+            g=data.get("g"),
+            x=data.get("x"),
+            h=data.get("h"),
+        )
+        return jsonify(keys)
+    except ValueError as err:
+        return jsonify({"error": str(err)}), 400
+    except Exception as err:
+        return jsonify({"error": str(err)}), 500
+
+
+@signature_bp.route("/signature/dsa/sign", methods=["POST"])
+def sign_dsa():
+    data = request.get_json(silent=True) or {}
+    text = data.get("text") if "text" in data else data.get("message")
+    p = data.get("p")
+    q = data.get("q")
+    g = data.get("g")
+    x = data.get("x")
+    k = data.get("k")
+    hash_algorithm = data.get("hash_algorithm", "sha256")
+
+    if not isinstance(text, str):
+        return jsonify({"error": "Le champ 'text' ou 'message' est requis"}), 400
+    if p is None or q is None or g is None or x is None:
+        return jsonify({"error": "Les champs 'p', 'q', 'g' et 'x' sont requis"}), 400
+
+    try:
+        return jsonify(dsa_sign(text, p, q, g, x, k, hash_algorithm))
+    except ValueError as err:
+        return jsonify({"error": str(err)}), 400
+    except Exception as err:
+        return jsonify({"error": str(err)}), 500
+
+
+@signature_bp.route("/signature/dsa/verify", methods=["POST"])
+def verify_dsa():
+    data = request.get_json(silent=True) or {}
+    text = data.get("text") if "text" in data else data.get("message")
+    signature = data.get("signature") or {}
+    r = data.get("r", signature.get("r"))
+    s = data.get("s", signature.get("s"))
+    p = data.get("p")
+    q = data.get("q")
+    g = data.get("g")
+    y = data.get("y")
+    hash_algorithm = data.get("hash_algorithm", "sha256")
+
+    if not isinstance(text, str):
+        return jsonify({"error": "Le champ 'text' ou 'message' est requis"}), 400
+    if r is None or s is None or p is None or q is None or g is None or y is None:
+        return jsonify({"error": "Les champs 'r', 's', 'p', 'q', 'g' et 'y' sont requis"}), 400
+
+    try:
+        return jsonify(dsa_verify(text, r, s, p, q, g, y, hash_algorithm))
     except ValueError as err:
         return jsonify({"error": str(err)}), 400
     except Exception as err:

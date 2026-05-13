@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Signature ElGamal</title>
+<style>
+  :root {
+    --bg: #09111f;
+    --surface: #111c2e;
+    --surface-2: #17263d;
+    --line: #2b3d58;
+    --text: #edf4ff;
+    --muted: #9fb0c6;
+    --sign: #8fb3ff;
+    --verify: #5eead4;
+    --accent: #f6bd60;
+    --bad: #fb7185;
+    --good: #86efac;
+    --ink: #07111e;
+    --radius: 8px;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background: var(--bg);
+    color: var(--text);
+    font-family: Inter, Segoe UI, Arial, sans-serif;
+  }
+
+  button, input, select, textarea { font: inherit; }
+  button { border: 0; cursor: pointer; }
+  button:disabled { cursor: not-allowed; opacity: .5; }
+
+  .shell {
+    width: min(1260px, calc(100% - 32px));
+    margin: 0 auto;
+    padding: 28px 0 40px;
+  }
+
+  .top {
+    display: grid;
+    grid-template-columns: 1fr minmax(260px, 380px);
+    gap: 16px;
+    align-items: end;
+    margin-bottom: 16px;
+  }
+
+  h1 {
+    margin: 0 0 8px;
+    font-size: clamp(2rem, 5vw, 3.4rem);
+    line-height: 1;
+    letter-spacing: 0;
+    color: var(--sign);
+  }
+
+  .subtitle {
+    margin: 0;
+    color: var(--muted);
+    line-height: 1.5;
+    max-width: 780px;
+  }
+
+  .panel {
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--surface);
+    padding: 16px;
+  }
+
+  .panel h2 {
+    margin: 0 0 12px;
+    font-size: 1rem;
+    letter-spacing: 0;
+  }
+
+  .controls {
+    display: grid;
+    grid-template-columns: 1.15fr 1.15fr 1fr;
+    gap: 14px;
+    margin-bottom: 14px;
+  }
+
+  .label {
+    display: block;
+    color: var(--muted);
+    font-size: .72rem;
+    font-weight: 800;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  input, select, textarea {
+    width: 100%;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: #0d1728;
+    color: var(--text);
+    padding: 10px 12px;
+    outline: none;
+  }
+
+  input:focus, select:focus, textarea:focus {
+    border-color: var(--sign);
+  }
+
+  textarea {
+    min-height: 100px;
+    resize: vertical;
+    line-height: 1.45;
+  }
+
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .stack {
+    display: grid;
+    gap: 10px;
+  }
+
+  .btn-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 12px;
+  }
+
+  .btn {
+    min-height: 40px;
+    border-radius: var(--radius);
+    padding: 0 14px;
+    font-weight: 850;
+    color: var(--ink);
+    background: var(--accent);
+  }
+
+  .btn.sign { background: var(--sign); }
+  .btn.verify { background: var(--verify); }
+  .btn.bad { background: var(--bad); }
+
+  .arena {
+    display: grid;
+    grid-template-columns: 1fr 170px 1fr;
+    gap: 14px;
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    min-height: 24px;
+    border-radius: 999px;
+    padding: 2px 10px;
+    color: var(--ink);
+    font-size: .72rem;
+    font-weight: 850;
+  }
+
+  .badge.sign { background: var(--sign); }
+  .badge.verify { background: var(--verify); }
+  .badge.neutral { background: var(--accent); }
+
+  .title-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: center;
+    margin-bottom: 14px;
+  }
+
+  .readout {
+    min-height: 62px;
+    border: 1px solid #253854;
+    border-radius: var(--radius);
+    background: #0d1728;
+    padding: 10px;
+    overflow-wrap: anywhere;
+    white-space: pre-wrap;
+    line-height: 1.45;
+    font-family: Consolas, Menlo, monospace;
+    font-size: .86rem;
+  }
+
+  .readout.small { min-height: 42px; }
+  .readout.good { border-color: rgba(134, 239, 172, .7); color: var(--good); }
+  .readout.bad { border-color: rgba(251, 113, 133, .75); color: var(--bad); }
+
+  .flow {
+    display: grid;
+    align-content: center;
+    gap: 12px;
+  }
+
+  .node {
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--surface-2);
+    padding: 12px;
+    text-align: center;
+  }
+
+  .node strong {
+    display: block;
+    margin-bottom: 5px;
+    font-size: .86rem;
+  }
+
+  .node span {
+    color: var(--muted);
+    font-size: .8rem;
+    line-height: 1.35;
+  }
+
+  .arrow {
+    height: 38px;
+    position: relative;
+  }
+
+  .arrow::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 50%;
+    width: 2px;
+    background: var(--accent);
+  }
+
+  .arrow::after {
+    content: "";
+    position: absolute;
+    left: calc(50% - 6px);
+    bottom: 0;
+    width: 12px;
+    height: 12px;
+    border-right: 2px solid var(--accent);
+    border-bottom: 2px solid var(--accent);
+    transform: rotate(45deg);
+  }
+
+  .formula {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin-top: 14px;
+  }
+
+  .formula-box {
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--surface);
+    padding: 12px;
+    min-height: 86px;
+  }
+
+  .formula-box strong {
+    display: block;
+    color: var(--accent);
+    margin-bottom: 6px;
+  }
+
+  .formula-box code {
+    display: inline;
+    white-space: normal;
+  }
+
+  .steps {
+    margin-top: 14px;
+  }
+
+  .steps h2 {
+    margin: 0 0 10px;
+    color: var(--muted);
+    font-size: .82rem;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+  }
+
+  .step-list {
+    display: grid;
+    gap: 8px;
+  }
+
+  .step {
+    display: grid;
+    grid-template-columns: 34px 1fr;
+    gap: 10px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--surface);
+    padding: 10px;
+  }
+
+  .num {
+    width: 28px;
+    height: 28px;
+    display: grid;
+    place-items: center;
+    border-radius: 999px;
+    background: var(--surface-2);
+    color: var(--accent);
+    font-weight: 900;
+  }
+
+  .step p {
+    margin: 0;
+    line-height: 1.45;
+  }
+
+  code {
+    border-radius: 5px;
+    background: #0d1728;
+    color: var(--accent);
+    padding: 1px 5px;
+    font-family: Consolas, Menlo, monospace;
+    overflow-wrap: anywhere;
+  }
+
+  .status {
+    min-height: 22px;
+    margin-top: 10px;
+    color: var(--muted);
+    font-size: .9rem;
+  }
+
+  .status.good { color: var(--good); }
+  .status.bad { color: var(--bad); }
+
+  @media (max-width: 980px) {
+    .top, .controls, .arena, .formula {
+      grid-template-columns: 1fr;
+    }
+
+    .flow {
+      grid-template-columns: repeat(4, 1fr);
+    }
+
+    .arrow {
+      display: none;
+    }
+  }
+
+  @media (max-width: 620px) {
+    .shell {
+      width: min(100% - 20px, 1260px);
+      padding-top: 16px;
+    }
+
+    .grid-2, .flow {
+      grid-template-columns: 1fr;
+    }
+
+    .btn {
+      width: 100%;
+    }
+  }
+</style>
+</head>
+<body>
+<main class="shell">
+  <section class="top">
+    <div>
+      <h1>Signature ElGamal</h1>
+      <p class="subtitle">
+        A signe un message avec sa cle privee <code>x</code>. La signature est le couple
+        <code>(r, s)</code>. B verifie avec la cle publique <code>y = g^x mod p</code>.
+      </p>
+    </div>
+    <div class="panel">
+      <label class="label" for="api-base">API backend</label>
+      <input id="api-base" value="http://127.0.0.1:5000/api">
+    </div>
+  </section>
+
+  <section class="controls">
+    <div class="panel">
+      <div class="title-row">
+        <h2>Parametres publics</h2>
+        <span class="badge neutral">p, g</span>
+      </div>
+      <div class="grid-2">
+        <label>
+          <span class="label">p premier</span>
+          <input id="p" type="number" value="467" min="3">
+        </label>
+        <label>
+          <span class="label">g generateur</span>
+          <input id="g" type="number" placeholder="auto">
+        </label>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="title-row">
+        <h2>Secret de A</h2>
+        <span class="badge sign">cle privee</span>
+      </div>
+      <div class="grid-2">
+        <label>
+          <span class="label">x</span>
+          <input id="x" type="number" value="127" min="1">
+        </label>
+        <label>
+          <span class="label">k aleatoire</span>
+          <input id="k" type="number" value="127" min="1">
+        </label>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="title-row">
+        <h2>Operations</h2>
+        <span class="badge verify">test</span>
+      </div>
+      <label>
+        <span class="label">hachage</span>
+        <select id="hash-algo">
+          <option value="sha256" selected>SHA-256</option>
+          <option value="sha1">SHA-1</option>
+          <option value="md5">MD5</option>
+          <option value="md4">MD4</option>
+          <option value="sha512">SHA-512</option>
+        </select>
+      </label>
+      <div class="btn-row">
+        <button class="btn sign" id="btn-keys" onclick="generateKeys()">Generer les cles</button>
+        <button class="btn" id="btn-sign" onclick="signMessage()" disabled>Signer</button>
+        <button class="btn verify" id="btn-verify" onclick="verifyMessage()" disabled>Verifier</button>
+      </div>
+      <div class="status" id="status"></div>
+    </div>
+  </section>
+
+  <section class="arena">
+    <article class="panel">
+      <div class="title-row">
+        <h2>A signe</h2>
+        <span class="badge sign">x secret</span>
+      </div>
+      <div class="stack">
+        <label>
+          <span class="label">message m</span>
+          <textarea id="message">Bonjour Bob</textarea>
+        </label>
+        <div>
+          <span class="label">cle privee</span>
+          <div class="readout small" id="private-key">x = -</div>
+        </div>
+        <div>
+          <span class="label">empreinte H(m)</span>
+          <div class="readout" id="hash-out">-</div>
+        </div>
+        <div>
+          <span class="label">signature (r, s)</span>
+          <div class="readout" id="signature-out">-</div>
+        </div>
+      </div>
+    </article>
+
+    <aside class="flow">
+      <div class="node">
+        <strong>1. choisir k</strong>
+        <span>pgcd(k, p - 1) = 1</span>
+      </div>
+      <div class="arrow"></div>
+      <div class="node">
+        <strong>2. r = g^k mod p</strong>
+        <span>premiere partie</span>
+      </div>
+      <div class="arrow"></div>
+      <div class="node">
+        <strong>3. s = k^-1(H(m)-xr)</strong>
+        <span>modulo p - 1</span>
+      </div>
+      <div class="arrow"></div>
+      <div class="node">
+        <strong>4. verifier u = v</strong>
+        <span>avec la cle publique y</span>
+      </div>
+    </aside>
+
+    <article class="panel">
+      <div class="title-row">
+        <h2>B verifie</h2>
+        <span class="badge verify">y public</span>
+      </div>
+      <div class="stack">
+        <div>
+          <span class="label">cle publique</span>
+          <div class="readout small" id="public-key">p = -, g = -, y = -</div>
+        </div>
+        <div>
+          <span class="label">u = y^r r^s mod p</span>
+          <div class="readout" id="u-out">-</div>
+        </div>
+        <div>
+          <span class="label">v = g^H(m) mod p</span>
+          <div class="readout" id="v-out">-</div>
+        </div>
+        <div>
+          <span class="label">resultat</span>
+          <div class="readout small" id="result-out">-</div>
+        </div>
+        <button class="btn bad" id="btn-tamper" onclick="tamperTest()" disabled>
+          Tester avec message modifie
+        </button>
+      </div>
+    </article>
+  </section>
+
+  <section class="formula">
+    <div class="formula-box">
+      <strong>Signature</strong>
+      <code>r = g^k mod p</code><br>
+      <code>s = k^-1(H(m) - x*r) mod (p - 1)</code>
+    </div>
+    <div class="formula-box">
+      <strong>Verification</strong>
+      <code>0 &lt; r &lt; p</code><br>
+      <code>u = y^r * r^s mod p</code><br>
+      <code>v = g^H(m) mod p</code><br>
+      accepter si <code>u = v</code>
+    </div>
+  </section>
+
+  <section class="steps">
+    <h2>Journal des etapes</h2>
+    <div class="step-list" id="steps-log"></div>
+  </section>
+</main>
+
+<script>
+let keys = null;
+let signed = null;
+let stepCount = 0;
+
+function apiBase() {
+  return document.getElementById('api-base').value.replace(/\/+$/, '');
+}
+
+function setStatus(text, kind = '') {
+  const el = document.getElementById('status');
+  el.textContent = text;
+  el.className = 'status' + (kind ? ` ${kind}` : '');
+}
+
+function setReadout(id, value, kind = '') {
+  const el = document.getElementById(id);
+  el.textContent = value;
+  el.className = 'readout' + (id === 'public-key' || id === 'private-key' || id === 'result-out' ? ' small' : '') + (kind ? ` ${kind}` : '');
+}
+
+function addStep(html) {
+  stepCount += 1;
+  const item = document.createElement('div');
+  item.className = 'step';
+  item.innerHTML = `<div class="num">${stepCount}</div><p>${html}</p>`;
+  document.getElementById('steps-log').appendChild(item);
+}
+
+function resetSignature() {
+  signed = null;
+  stepCount = 0;
+  document.getElementById('steps-log').innerHTML = '';
+  setReadout('hash-out', '-');
+  setReadout('signature-out', '-');
+  setReadout('u-out', '-');
+  setReadout('v-out', '-');
+  setReadout('result-out', '-');
+  document.getElementById('btn-verify').disabled = true;
+  document.getElementById('btn-tamper').disabled = true;
+}
+
+async function postJson(path, body) {
+  const res = await fetch(`${apiBase()}${path}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  const data = await res.json();
+  if (!res.ok || data.error) {
+    throw new Error(data.error || `Erreur HTTP ${res.status}`);
+  }
+  return data;
+}
+
+function intOrNull(id) {
+  const value = document.getElementById(id).value.trim();
+  return value === '' ? null : parseInt(value, 10);
+}
+
+async function generateKeys() {
+  resetSignature();
+  document.getElementById('btn-keys').disabled = true;
+  document.getElementById('btn-sign').disabled = true;
+  setStatus('Generation de la cle publique y = g^x mod p...');
+
+  try {
+    const body = {
+      p: intOrNull('p'),
+      g: intOrNull('g'),
+      x: intOrNull('x')
+    };
+    Object.keys(body).forEach(key => body[key] === null && delete body[key]);
+
+    keys = await postJson('/signature/elgamal/generate-keys', body);
+    document.getElementById('g').value = keys.public_key.g;
+    document.getElementById('x').value = keys.private_key.x;
+    setReadout('public-key', `p = ${keys.public_key.p}\ng = ${keys.public_key.g}\ny = ${keys.public_key.y}`);
+    setReadout('private-key', `x = ${keys.private_key.x}`);
+
+    addStep(`A choisit <code>p=${keys.public_key.p}</code>, <code>g=${keys.public_key.g}</code> et la cle privee <code>x=${keys.private_key.x}</code>.`);
+    addStep(`A calcule la cle publique <code>y = g^x mod p = ${keys.public_key.y}</code>.`);
+    document.getElementById('btn-sign').disabled = false;
+    setStatus('Cles pretes. Tu peux signer le message.', 'good');
+  } catch (err) {
+    setStatus(err.message, 'bad');
+  } finally {
+    document.getElementById('btn-keys').disabled = false;
+  }
+}
+
+async function signMessage() {
+  if (!keys) return;
+  resetSignature();
+  document.getElementById('btn-sign').disabled = true;
+  setStatus('Calcul de r et s...');
+
+  try {
+    const k = intOrNull('k');
+    signed = await postJson('/signature/elgamal/sign', {
+      message: document.getElementById('message').value,
+      hash_algorithm: document.getElementById('hash-algo').value,
+      p: keys.public_key.p,
+      g: keys.public_key.g,
+      x: keys.private_key.x,
+      k
+    });
+
+    document.getElementById('k').value = signed.k;
+    setReadout('hash-out', `${signed.hash_algorithm}: ${signed.hash}\nH(m) mod (p - 1) = ${signed.hash_mod_p_minus_1}`);
+    setReadout('signature-out', `r = ${signed.r}\ns = ${signed.s}\nk = ${signed.k}\nk^-1 mod (p - 1) = ${signed.k_inverse}`);
+
+    addStep(`A choisit <code>k=${signed.k}</code> avec <code>pgcd(k, p-1)=1</code>.`);
+    addStep(`A calcule <code>r = g^k mod p = ${signed.r}</code>.`);
+    addStep(`A calcule <code>s = k^-1(H(m) - x*r) mod (p-1) = ${signed.s}</code>.`);
+    addStep(`La signature envoyee est <code>(r, s) = (${signed.r}, ${signed.s})</code>.`);
+
+    document.getElementById('btn-verify').disabled = false;
+    setStatus('Signature calculee. Bob peut verifier.', 'good');
+  } catch (err) {
+    setStatus(err.message, 'bad');
+  } finally {
+    document.getElementById('btn-sign').disabled = false;
+  }
+}
+
+async function verifyMessage() {
+  if (!keys || !signed) return;
+  document.getElementById('btn-verify').disabled = true;
+  setStatus('Verification de u = v...');
+
+  try {
+    const result = await postJson('/signature/elgamal/verify', {
+      message: document.getElementById('message').value,
+      hash_algorithm: signed.hash_algorithm,
+      r: signed.r,
+      s: signed.s,
+      p: keys.public_key.p,
+      g: keys.public_key.g,
+      y: keys.public_key.y
+    });
+
+    showVerification(result);
+    addStep(`B verifie d'abord <code>0 &lt; r &lt; p</code>: <code>${result.range_valid}</code>.`);
+    addStep(`B calcule <code>u = y^r * r^s mod p = ${result.u}</code>.`);
+    addStep(`B calcule <code>v = g^H(m) mod p = ${result.v}</code>.`);
+    addStep(result.valid ? `B accepte car <code>u = v</code>.` : `B refuse car <code>u != v</code>.`);
+
+    document.getElementById('btn-tamper').disabled = false;
+    setStatus('Verification terminee.', result.valid ? 'good' : 'bad');
+  } catch (err) {
+    setStatus(err.message, 'bad');
+  } finally {
+    document.getElementById('btn-verify').disabled = false;
+  }
+}
+
+function showVerification(result) {
+  const kind = result.valid ? 'good' : 'bad';
+  setReadout('u-out', `u = ${result.u}\n${result.formula_u}`, kind);
+  setReadout('v-out', `v = ${result.v}\n${result.formula_v}`, kind);
+  setReadout('result-out', result.valid ? 'Signature valide' : 'Signature invalide', kind);
+}
+
+async function tamperTest() {
+  if (!keys || !signed) return;
+  setStatus('Test avec message modifie et meme signature...');
+
+  try {
+    const changed = `${document.getElementById('message').value}!`;
+    const result = await postJson('/signature/elgamal/verify', {
+      message: changed,
+      hash_algorithm: signed.hash_algorithm,
+      r: signed.r,
+      s: signed.s,
+      p: keys.public_key.p,
+      g: keys.public_key.g,
+      y: keys.public_key.y
+    });
+
+    showVerification(result);
+    addStep(`Test anti-modification: avec <code>${changed}</code>, la verification donne <code>${result.valid}</code>.`);
+    setStatus('Le message modifie est rejete.', 'bad');
+  } catch (err) {
+    setStatus(err.message, 'bad');
+  }
+}
+
+generateKeys();
+</script>
+</body>
+</html>
