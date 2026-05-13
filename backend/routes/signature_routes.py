@@ -1,5 +1,10 @@
 from flask import Blueprint, jsonify, request
 
+from Algorithmes.Signature.ElGamal import (
+    elgamal_sign,
+    elgamal_verify,
+    generate_keys as generate_elgamal_signature_keys,
+)
 from Algorithmes.Signature.RSA import (
     rsa_decrypt_and_verify,
     rsa_sign,
@@ -33,6 +38,72 @@ def sign_rsa():
 
     try:
         return jsonify(rsa_sign(text, n, d, hash_algorithm))
+    except ValueError as err:
+        return jsonify({"error": str(err)}), 400
+    except Exception as err:
+        return jsonify({"error": str(err)}), 500
+
+
+@signature_bp.route("/signature/elgamal/generate-keys", methods=["POST"])
+def generate_elgamal_signature():
+    data = request.get_json(silent=True) or {}
+
+    try:
+        keys = generate_elgamal_signature_keys(
+            bits=int(data.get("bits", 32)),
+            p=data.get("p"),
+            g=data.get("g"),
+            x=_first_present(data, "x", "s"),
+        )
+        return jsonify(keys)
+    except ValueError as err:
+        return jsonify({"error": str(err)}), 400
+    except Exception as err:
+        return jsonify({"error": str(err)}), 500
+
+
+@signature_bp.route("/signature/elgamal/sign", methods=["POST"])
+def sign_elgamal():
+    data = request.get_json(silent=True) or {}
+    text = data.get("text") if "text" in data else data.get("message")
+    p = data.get("p")
+    g = data.get("g")
+    x = _first_present(data, "x", "s")
+    k = data.get("k")
+    hash_algorithm = data.get("hash_algorithm", "sha256")
+
+    if not isinstance(text, str):
+        return jsonify({"error": "Le champ 'text' ou 'message' est requis"}), 400
+    if p is None or g is None or x is None:
+        return jsonify({"error": "Les champs 'p', 'g' et 'x' sont requis"}), 400
+
+    try:
+        return jsonify(elgamal_sign(text, p, g, x, k, hash_algorithm))
+    except ValueError as err:
+        return jsonify({"error": str(err)}), 400
+    except Exception as err:
+        return jsonify({"error": str(err)}), 500
+
+
+@signature_bp.route("/signature/elgamal/verify", methods=["POST"])
+def verify_elgamal():
+    data = request.get_json(silent=True) or {}
+    text = data.get("text") if "text" in data else data.get("message")
+    signature = data.get("signature") or {}
+    r = data.get("r", signature.get("r"))
+    s = data.get("s", signature.get("s"))
+    p = data.get("p")
+    g = data.get("g")
+    y = data.get("y")
+    hash_algorithm = data.get("hash_algorithm", "sha256")
+
+    if not isinstance(text, str):
+        return jsonify({"error": "Le champ 'text' ou 'message' est requis"}), 400
+    if r is None or s is None or p is None or g is None or y is None:
+        return jsonify({"error": "Les champs 'r', 's', 'p', 'g' et 'y' sont requis"}), 400
+
+    try:
+        return jsonify(elgamal_verify(text, r, s, p, g, y, hash_algorithm))
     except ValueError as err:
         return jsonify({"error": str(err)}), 400
     except Exception as err:
