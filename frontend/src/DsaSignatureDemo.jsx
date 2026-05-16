@@ -104,10 +104,10 @@ function FlowNode({ label, sub, color }) {
   return (
     <div style={{
       background: C.bg, border: `0.5px solid ${color ? color + "44" : C.border}`,
-      borderRadius: "8px", padding: "8px 10px", textAlign: "center",
+      borderRadius: "8px", padding: "7px 8px", textAlign: "center", width: "100%",
     }}>
-      <div style={{ fontFamily: mono, fontSize: "10px", color: color || C.text, fontWeight: 500, marginBottom: "3px" }}>{label}</div>
-      <div style={{ fontFamily: mono, fontSize: "9px", color: C.muted, lineHeight: 1.4 }}>{sub}</div>
+      <div style={{ fontFamily: mono, fontSize: "9px", color: color || C.text, fontWeight: 500, marginBottom: "2px", lineHeight: 1.4 }}>{label}</div>
+      <div style={{ fontFamily: mono, fontSize: "8px", color: C.muted, lineHeight: 1.4 }}>{sub}</div>
     </div>
   );
 }
@@ -430,7 +430,7 @@ export default function DsaSignatureDemo() {
 
         {/* FLOW COLUMN */}
         <div style={{
-          width: "130px", flexShrink: 0, background: C.panel,
+          width: "160px", flexShrink: 0, background: C.panel,
           border: `0.5px solid ${C.border}`, borderRadius: "10px",
           padding: "12px", display: "flex", flexDirection: "column",
           alignItems: "center", overflowY: "auto",
@@ -525,7 +525,8 @@ export default function DsaSignatureDemo() {
       {/* ── Step log ─────────────────────────────────────────────────────── */}
       <div style={{
         background: C.panel, border: `0.5px solid ${C.border}`,
-        borderRadius: "10px", padding: "12px 14px", height: "160px",
+        borderRadius: "10px", padding: "12px 14px",
+        minHeight: "120px", maxHeight: "180px",
         display: "flex", flexDirection: "column", flexShrink: 0,
       }}>
         <Label>JOURNAL DES ÉTAPES — SIGNATURE DSA</Label>

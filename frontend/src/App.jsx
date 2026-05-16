@@ -6,6 +6,9 @@ import ElGamalSignatureDemo from "./ElGamalSignatureDemo.jsx";
 import DsaSignatureDemo from "./DsaSignatureDemo.jsx";
 import DiffieHellmanDemo from "./DiffieHellmanDemo.jsx";
 import ShamirSecretDemo from "./ShamirSecretDemo.jsx";
+import DesDemo from "./DesDemo.jsx";
+import AesDemo from "./AesDemo.jsx";
+import Rc4Demo from "./Rc4Demo.jsx";
 
 const API_BASE = "http://localhost:5000/api";
 
@@ -65,8 +68,9 @@ const ALGORITHMS = {
     { id: "playfair", name: "Playfair", sub: "Grille 5×5", color: "#f472b6", keyFields: [{ id: "key", label: "Mot-clé", placeholder: "ex: MONARCHY", hint: "Grille 5×5 générée" }] },
   ],
   symetrique: [
-    { id: "des", name: "DES", sub: "64-bit block", color: "#22d3ee", keyFields: [{ id: "key", label: "Clé (hex 64-bit)", placeholder: "133457799BBCDFF1", hint: "Bientôt disponible" }], comingSoon: true },
-    { id: "aes", name: "AES", sub: "128 / 256-bit", color: "#34d399", keyFields: [{ id: "key", label: "Clé", placeholder: "0123456789ABCDEF...", hint: "Bientôt disponible" }], comingSoon: true },
+    { id: "des", name: "DES", sub: "64-bit block", color: "#22d3ee", keyFields: [] },
+    { id: "aes", name: "AES", sub: "128 / 256-bit", color: "#34d399", keyFields: [] },
+    { id: "rc4", name: "RC4", sub: "Chiffrement flux", color: "#a78bfa", keyFields: [] },
   ],
   asymetrique: [
     { id: "rsa", name: "RSA", sub: "Clé publique", color: "#facc15", keyFields: [] },
@@ -133,6 +137,9 @@ export default function App() {
   const isDsaSigDemo = activeAlgo.id === "dsa-signature";
   const isDiffieHellmanDemo = activeAlgo.id === "diffie-hellman";
   const isShamirDemo = activeAlgo.id === "shamir";
+  const isDesDemo = activeAlgo.id === "des";
+  const isAesDemo = activeAlgo.id === "aes";
+  const isRc4Demo = activeAlgo.id === "rc4";
 
   const inputStyle = { width: "100%", background: "#0a0c0b", border: "0.5px solid #1c201e", borderRadius: "6px", padding: "7px 10px", fontFamily: "inherit", fontSize: "12px", color: "#e2e8e4", outline: "none" };
   const labelStyle = { fontSize: "9px", color: "#2e3a35", letterSpacing: "2px", marginBottom: "10px" };
@@ -153,12 +160,12 @@ export default function App() {
         <div style={{ width: "220px", background: "#0f1210", borderRight: "0.5px solid #1c201e", display: "flex", flexDirection: "column", flexShrink: 0 }}>
           <div style={{ padding: "24px 18px 16px", borderBottom: "0.5px solid #1c201e" }}>
             <div style={{ fontSize: "13px", fontWeight: 500, color: "#e2e8e4", letterSpacing: "3px" }}>CRYPTO</div>
-            <div style={{ fontSize: "9px", color: "#3a4440", letterSpacing: "2px", marginTop: "3px" }}>SUITE / v2.0</div>
+            <div style={{ fontSize: "9px", color: "#4a5a55", letterSpacing: "2px", marginTop: "3px" }}>SUITE / v2.0</div>
           </div>
           <div style={{ flex: 1, overflowY: "auto", padding: "14px 10px" }}>
             {Object.entries(ALGORITHMS).map(([gk, algos]) => (
               <div key={gk} style={{ marginBottom: "22px" }}>
-                <div style={{ fontSize: "9px", color: "#2a3530", letterSpacing: "2px", marginBottom: "6px", padding: "0 6px" }}>{GROUP_LABELS[gk]}</div>
+                <div style={{ fontSize: "9px", color: "#3d5048", letterSpacing: "2px", marginBottom: "6px", padding: "0 6px" }}>{GROUP_LABELS[gk]}</div>
                 {algos.map((algo) => {
                   const active = activeAlgo.id === algo.id;
                   return (
@@ -167,10 +174,10 @@ export default function App() {
                       onMouseEnter={e => { if (!active) e.currentTarget.style.background = "#131815"; }}
                       onMouseLeave={e => { if (!active) e.currentTarget.style.background = "transparent"; }}
                     >
-                      <div style={{ width: "7px", height: "7px", borderRadius: "50%", background: algo.color, flexShrink: 0, boxShadow: active ? `0 0 8px ${algo.color}99` : "none" }} />
+                      <div style={{ width: "7px", height: "7px", borderRadius: "50%", background: algo.color, flexShrink: 0, boxShadow: active ? `0 0 10px ${algo.color}cc` : "none" }} />
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontSize: "12px", color: active ? "#e2e8e4" : "#6a7870", fontWeight: 500 }}>
-                          {algo.name}{algo.comingSoon && <span style={{ fontSize: "8px", color: "#3a4440", marginLeft: "6px" }}>bientôt</span>}
+                          {algo.name}{algo.comingSoon && <span style={{ fontSize: "8px", color: "#5a6a65", marginLeft: "6px", padding: "1px 5px", border: "0.5px solid #2a3530", borderRadius: "3px" }}>bientôt</span>}
                         </div>
                         <div style={{ fontSize: "10px", color: "#3a4440", marginTop: "1px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{algo.sub}</div>
                       </div>
@@ -191,13 +198,25 @@ export default function App() {
               <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#22c55e", boxShadow: "0 0 8px #22c55e88" }} />
               <div>
                 <div style={{ fontSize: "15px", color: "#e2e8e4", fontWeight: 500 }}>
-                  Chiffrement {activeAlgo.name}
-                  {activeAlgo.comingSoon && <span style={{ fontSize: "11px", color: "#3a4440", marginLeft: "10px", fontWeight: 400 }}>— bientôt disponible</span>}
+                  {["rsa-signature", "elgamal-signature", "dsa-signature"].includes(activeAlgo.id)
+                    ? `Signature ${activeAlgo.id === "dsa-signature" ? "DSA" : activeAlgo.id === "rsa-signature" ? "RSA" : "ElGamal"}`
+                    : activeAlgo.id === "diffie-hellman"
+                    ? "Échange de clés — Diffie-Hellman"
+                    : activeAlgo.id === "shamir"
+                    ? "Partage de Secret — Shamir"
+                    : activeAlgo.id === "des"
+                    ? "DES — Data Encryption Standard"
+                    : activeAlgo.id === "aes"
+                    ? "AES — Advanced Encryption Standard"
+                    : activeAlgo.id === "rc4"
+                    ? "RC4 — Rivest Cipher 4"
+                    : `Chiffrement ${activeAlgo.name}`}
+                  {activeAlgo.comingSoon && <span style={{ fontSize: "11px", color: "#4a5a55", marginLeft: "10px", fontWeight: 400 }}>— bientôt disponible</span>}
                 </div>
-                <div style={{ fontSize: "10px", color: "#3a4440", marginTop: "2px" }}>{GROUP_LABELS[findGroup(activeAlgo.id)]} · {activeAlgo.sub}</div>
+                <div style={{ fontSize: "10px", color: "#4a5a55", marginTop: "2px" }}>{GROUP_LABELS[findGroup(activeAlgo.id)]} · {activeAlgo.sub}</div>
               </div>
             </div>
-            {!isRsaDemo && !isElGamalDemo && !isRsaSigDemo && !isElGamalSigDemo && !isDsaSigDemo && !isDiffieHellmanDemo && !isShamirDemo && (
+            {!isRsaDemo && !isElGamalDemo && !isRsaSigDemo && !isElGamalSigDemo && !isDsaSigDemo && !isDiffieHellmanDemo && !isShamirDemo && !isDesDemo && !isAesDemo && !isRc4Demo && (
             <div style={{ display: "flex", background: "#161c19", borderRadius: "8px", padding: "3px", gap: "2px" }}>
               {["chiffrer", "dechiffrer"].map((m) => (
                 <button key={m} onClick={() => { setMode(m); setResult(null); setError(null); }}
@@ -210,7 +229,7 @@ export default function App() {
           </div>
 
           {/* CONTENT */}
-          <div style={{ flex: 1, padding: "20px 28px", display: "flex", flexDirection: "column", gap: "14px", overflow: "hidden" }}>
+          <div style={{ flex: 1, padding: "20px 28px", display: "flex", flexDirection: "column", gap: "14px", overflowY: "auto", minHeight: 0 }}>
             {isRsaDemo ? (
               <RsaDemo />
             ) : isElGamalDemo ? (
@@ -225,6 +244,12 @@ export default function App() {
               <DiffieHellmanDemo />
             ) : isShamirDemo ? (
               <ShamirSecretDemo />
+            ) : isDesDemo ? (
+              <DesDemo />
+            ) : isAesDemo ? (
+              <AesDemo />
+            ) : isRc4Demo ? (
+              <Rc4Demo />
             ) : (
               <>
 

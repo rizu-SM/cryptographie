@@ -304,7 +304,7 @@ export default function DiffieHellmanDemo() {
               {loading === "params" ? "⟳ géné..." : "Générer p et g"}
             </button>
 
-            <button style={btn(C.code, loading === "exchange")} disabled={loading === "exchange"} onClick={runExchange}>
+            <button style={btn(C.neutral, loading === "exchange")} disabled={loading === "exchange"} onClick={runExchange}>
               {loading === "exchange" ? "⟳ calcul..." : "Calculer l'échange"}
             </button>
 
@@ -378,7 +378,8 @@ export default function DiffieHellmanDemo() {
       {/* ── Row 2: step log ──────────────────────────────────────────────────── */}
       <div style={{
         background: C.panel, border: `0.5px solid ${C.border}`, borderRadius: "10px",
-        padding: "14px 16px", height: "220px", display: "flex", flexDirection: "column",
+        padding: "14px 16px", minHeight: "140px", maxHeight: "220px",
+        display: "flex", flexDirection: "column", flexShrink: 0,
       }}>
         <Label>JOURNAL DES ÉTAPES — DIFFIE-HELLMAN</Label>
         <div ref={logRef} style={{ flex: 1, overflowY: "auto", paddingRight: "4px" }}>
