@@ -2,6 +2,8 @@ import { useState, useCallback } from "react";
 import RsaDemo from "./RsaDemo.jsx";
 import ElGamalDemo from "./ElGamalDemo.jsx";
 import RsaSignatureDemo from "./RsaSignatureDemo.jsx";
+import ElGamalSignatureDemo from "./ElGamalSignatureDemo.jsx";
+import DsaSignatureDemo from "./DsaSignatureDemo.jsx";
 import DiffieHellmanDemo from "./DiffieHellmanDemo.jsx";
 import ShamirSecretDemo from "./ShamirSecretDemo.jsx";
 
@@ -70,6 +72,8 @@ const ALGORITHMS = {
     { id: "rsa", name: "RSA", sub: "Clé publique", color: "#facc15", keyFields: [] },
     { id: "elgamal", name: "ElGamal", sub: "Logarithme discret", color: "#fb923c", keyFields: [] },
     { id: "rsa-signature", name: "RSA Signature", sub: "Signer & vérifier", color: "#a78bfa", keyFields: [] },
+    { id: "elgamal-signature", name: "ElGamal Sig.", sub: "Signature discrète", color: "#8fb3ff", keyFields: [] },
+    { id: "dsa-signature", name: "DSA", sub: "Standard DSA", color: "#34d399", keyFields: [] },
   ],
   partage: [
     { id: "diffie-hellman", name: "Diffie-Hellman", sub: "Échange de clés", color: "#ec4899", keyFields: [] },
@@ -125,6 +129,8 @@ export default function App() {
   const isRsaDemo = activeAlgo.id === "rsa";
   const isElGamalDemo = activeAlgo.id === "elgamal";
   const isRsaSigDemo = activeAlgo.id === "rsa-signature";
+  const isElGamalSigDemo = activeAlgo.id === "elgamal-signature";
+  const isDsaSigDemo = activeAlgo.id === "dsa-signature";
   const isDiffieHellmanDemo = activeAlgo.id === "diffie-hellman";
   const isShamirDemo = activeAlgo.id === "shamir";
 
@@ -191,7 +197,7 @@ export default function App() {
                 <div style={{ fontSize: "10px", color: "#3a4440", marginTop: "2px" }}>{GROUP_LABELS[findGroup(activeAlgo.id)]} · {activeAlgo.sub}</div>
               </div>
             </div>
-            {!isRsaDemo && !isElGamalDemo && !isRsaSigDemo && !isDiffieHellmanDemo && !isShamirDemo && (
+            {!isRsaDemo && !isElGamalDemo && !isRsaSigDemo && !isElGamalSigDemo && !isDsaSigDemo && !isDiffieHellmanDemo && !isShamirDemo && (
             <div style={{ display: "flex", background: "#161c19", borderRadius: "8px", padding: "3px", gap: "2px" }}>
               {["chiffrer", "dechiffrer"].map((m) => (
                 <button key={m} onClick={() => { setMode(m); setResult(null); setError(null); }}
@@ -211,6 +217,10 @@ export default function App() {
               <ElGamalDemo />
             ) : isRsaSigDemo ? (
               <RsaSignatureDemo />
+            ) : isElGamalSigDemo ? (
+              <ElGamalSignatureDemo />
+            ) : isDsaSigDemo ? (
+              <DsaSignatureDemo />
             ) : isDiffieHellmanDemo ? (
               <DiffieHellmanDemo />
             ) : isShamirDemo ? (
